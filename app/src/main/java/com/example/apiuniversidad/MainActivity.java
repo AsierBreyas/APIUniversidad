@@ -1,10 +1,15 @@
 package com.example.apiuniversidad;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -21,12 +26,15 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     Button llamarApi;
     TextInputLayout inputPais;
     TextInputLayout inputNombre;
     String enlaceApi;
+    List<ListUniversidad> universidades;
+    WebView webView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,9 +43,9 @@ public class MainActivity extends AppCompatActivity {
         llamarApi = findViewById(R.id.buttonLlamarApi);
         inputPais = findViewById(R.id.textInputPais);
         inputNombre = findViewById(R.id.textInputNombre);
-/*
-        datos = findViewById(R.id.textUniversidades);
-*/
+        webView = findViewById(R.id.webView);
+        final WebSettings ajustesVisorWeb = webView.getSettings();
+        ajustesVisorWeb.setJavaScriptEnabled(true);
 
         llamarApi.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,17 +71,15 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(String response){
                 try{
                     JSONArray jsonArray = new JSONArray(response);
-                    ArrayList<HashMap<String, String>> data=new ArrayList<HashMap<String,String>>();
+                    universidades = new ArrayList<>();
                     for(int i = 0; i < jsonArray.length(); i++){
                         JSONObject universidad = jsonArray.getJSONObject(i);
                         String nombre = universidad.getString("name");
                         String web = universidad.getJSONArray("web_pages").toString();
                         System.out.println(nombre + " " + web);
-                        HashMap<String, String> map=new HashMap<String, String>();
-                        map.put("Nombre", nombre);
-                        map.put("Web", web);
-                        data.add(map);
+                        universidades.add(new ListUniversidad(nombre, web));
                     }
+
                 }catch(JSONException e){
                     e.printStackTrace();
                 }
@@ -85,13 +91,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         Volley.newRequestQueue(this).add(postRequest);
-    }
-    private UniversidadFragment newInstance(String nombre, String web){
-        UniversidadFragment f = new UniversidadFragment();
-        Bundle args = new Bundle();
-        args.putString("nombre", nombre);
-        args.putString("web", web);
-        f.setArguments(args);
-        return f;
+        ListAdapter listAdapter = new ListAdapter(universidades, this, webView);
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(listAdapter);
     }
 }
